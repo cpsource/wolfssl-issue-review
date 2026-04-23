@@ -2,19 +2,26 @@
 
 A [Claude Code](https://claude.ai/code) skill that runs the full wolfSSL
 GitHub-issue review workflow in one invocation. From a single
-`review issue 10287` prompt, it produces:
+`review issue 10287` prompt, it produces (under
+`<wolfssl-tree>/wolfssl-issues/issue-N/`):
 
-- **`issue-N/README-issue-N.md`** — 10-section analysis (bug, upstream
+- **`README-issue-N.md`** — 10-section analysis (bug, upstream
   status, root cause, proposed fix, caveats, tests to add,
   end-to-end verification)
-- **`issue-N/issue-N.patch`** — unified diff against current master
-- **`issue-N/issue-N-test.c`** — self-contained C reproducer that
+- **`issue-N.patch`** — unified diff against current master
+- **`issue-N-test.c`** — self-contained C reproducer that
   actually triggers the bug
-- **`issue-N/test.sh`** — BEFORE/AFTER harness with PASS/FAIL gate,
+- **`test.sh`** — BEFORE/AFTER harness with PASS/FAIL gate,
   `pkill`-based server cleanup, and tree-restore on exit
-- **`issue-N/.gitignore`** — excludes the compiled binary
-- A local git commit
+- **`.gitignore`** — excludes the compiled binary
+- A local git commit in the `wolfssl-issues` sub-repo (not pushed
+  automatically — you approve)
 - A drafted GitHub reply body (posted only on your explicit approval)
+
+The `wolfssl-issues/` directory is a sibling git repository inside
+the wolfSSL working tree — typically a clone of the companion repo
+that holds per-issue review artefacts (e.g.
+[`CpsourceInc/wolfssl-issues`](https://github.com/CpsourceInc/wolfssl-issues)).
 
 ## Background
 
@@ -53,6 +60,10 @@ directly: `git clone https://github.com/cpsource/wolfssl-issue-review
   `wolfSSL/wolfssl` (`gh auth status` should show a valid token).
 - **wolfSSL clone** at `/home/ubuntu/wolfssl` by default. Other paths
   work; tell Claude the path when invoking.
+- **wolfssl-issues sub-repo** at `<wolfssl-tree>/wolfssl-issues/` —
+  must exist and be a git working tree. Typically
+  `git clone git@github.com:CpsourceInc/wolfssl-issues ~/wolfssl/wolfssl-issues`.
+  The skill refuses to run if this directory is missing.
 - **Build toolchain**: `autoconf`, `automake`, `libtool`, `gcc`,
   `make` — enough to run `./configure && make` against wolfSSL.
 - Port **11111** free (the default `./examples/server/server` port

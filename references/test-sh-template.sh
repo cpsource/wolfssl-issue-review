@@ -42,9 +42,11 @@ NEEDS_SERVER=1
 PORT=11111
 # ============== END USER-FILL =============================================
 
-# Resolve repo root from this script's location.
+# Resolve repo root from this script's location. Layout is
+#   <wolfssl-tree>/wolfssl-issues/issue-N/test.sh
+# so the wolfSSL repo root is two levels up.
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO="$(cd "$HERE/.." && pwd)"
+REPO="$(cd "$HERE/../.." && pwd)"
 cd "$REPO"
 
 TEST_BIN="$HERE/issue-${ISSUE_N}-test"

@@ -27,10 +27,10 @@ allowed-tools:
 One-shot review workflow for a wolfSSL GitHub issue. The user says
 `review issue 10287` (or invokes `/wolfssl-issue-review 10287`) and this
 skill produces the same artifacts the author has been hand-crafting for
-issues #10019, #10271, and #10287:
+issues #10019, #10271, #10287, and #9753:
 
 ```
-<wolfssl-repo>/issue-N/
+<wolfssl-repo>/wolfssl-issues/issue-N/
 ├── README-issue-N.md        # 10-section analysis with Upstream status
 ├── issue-N.patch            # unified diff against current master
 ├── issue-N-test.c           # self-contained C reproducer (if feasible)
@@ -38,17 +38,29 @@ issues #10019, #10271, and #10287:
 └── .gitignore               # excludes the compiled binary
 ```
 
+`wolfssl-issues/` is a sibling git repository alongside the wolfSSL
+source — typically a clone of the companion repo where per-issue
+review artefacts live (e.g. `CpsourceInc/wolfssl-issues`). Commits
+for the review go into that repo, not the wolfSSL tree.
+
 ## Inputs
 
 - Issue number `N` (required). Extract from the invocation text.
 - Repo: `wolfSSL/wolfssl` unless the user overrides.
-- Local tree: `/home/ubuntu/wolfssl` unless the user overrides.
+- Local wolfSSL tree: `/home/ubuntu/wolfssl` unless the user overrides.
+- Local issues repo: `<wolfssl-tree>/wolfssl-issues/` — must exist and
+  be a git working tree. If it doesn't exist, stop and ask the user
+  to clone it first.
 
 ## Guardrails
 
 - **Never post** the GitHub reply without showing the body to the user and
   receiving explicit approval. `gh issue comment` only runs on "post it".
+- **Never push** the wolfssl-issues commit without explicit approval.
+  Same pattern — show the commit, ask, then push.
 - **Never amend public commits** or force-push.
+- **Refuse to start** if `<wolfssl-tree>/wolfssl-issues/` is missing
+  or not a git working tree. The artefacts have nowhere to go.
 - If the tree is dirty, stash before pull and pop after. Check for the
   `tests/psk_oracle_test.c` index-stale pattern observed in the author's
   workflow (empty-blob entry with non-empty working copy) and refresh with
@@ -114,7 +126,10 @@ Record findings verbatim for the README — including the negative result
   independently cross-check the diagnosis against callers and tests.
   (Same pattern as `code-review-cpsource` Phase 3.5 verification.)
 
-### Phase 5 — Write `issue-N/README-issue-N.md`
+### Phase 5 — Write `wolfssl-issues/issue-N/README-issue-N.md`
+
+All per-issue artefacts go under `<wolfssl-tree>/wolfssl-issues/issue-N/`.
+Create the directory if it doesn't exist.
 
 Use [references/readme-template.md](references/readme-template.md) as
 the skeleton. Mandatory H2 sections:
@@ -135,22 +150,23 @@ the skeleton. Mandatory H2 sections:
 ```sh
 # Apply edits in-tree
 # Edit: <source files>
-git diff <files> > issue-N/issue-N.patch
+git diff <files> > wolfssl-issues/issue-N/issue-N.patch
 # Verify
-git apply --check issue-N/issue-N.patch
+git apply --check wolfssl-issues/issue-N/issue-N.patch
 # Revert working tree
 git checkout -- <files>
 ```
 
 ### Phase 7 — Write the C reproducer
 
-Write `issue-N/issue-N-test.c` as a self-contained program that uses
-wolfSSL APIs (or hand-crafts protocol bytes) to trigger the bug. Exit
-code 0 on PASS, non-zero on FAIL.
+Write `wolfssl-issues/issue-N/issue-N-test.c` as a self-contained
+program that uses wolfSSL APIs (or hand-crafts protocol bytes) to
+trigger the bug. Exit code 0 on PASS, non-zero on FAIL.
 
 Canonical worked example — a TLS 1.3 ClientHello + full client-side
-key-schedule reproducer — lives at
-`/home/ubuntu/wolfssl/issue-10287/issue-10287-test.c`. See
+key-schedule reproducer — lives in the companion
+`CpsourceInc/wolfssl-issues` repo at
+`wolfssl-issues/issue-10287/issue-10287-test.c`. See
 [assets/issue-10287-example.md](assets/issue-10287-example.md) for a
 guided tour. Adapt the patterns as needed; not every bug needs a full
 protocol implementation.
@@ -172,7 +188,9 @@ README.
 ### Phase 8 — Write `test.sh`
 
 Copy [references/test-sh-template.sh](references/test-sh-template.sh)
-to `issue-N/test.sh` and fill in the placeholders:
+to `wolfssl-issues/issue-N/test.sh` and fill in the placeholders.
+The template already assumes it lives two levels below the wolfSSL
+repo root (`HERE/../..`), matching the new layout.
 
 - `<ISSUE_N>` — the issue number
 - `<CFG_FLAGS>` — `./configure` flags needed for the affected code
@@ -192,7 +210,7 @@ Chmod +x. The script must:
 - Print a 4-line colored summary.
 - Exit 0 iff all outcomes match expectation.
 
-### Phase 9 — Write `issue-N/.gitignore`
+### Phase 9 — Write `wolfssl-issues/issue-N/.gitignore`
 
 One line: `issue-N-test` (the compiled binary name). No other entries.
 
@@ -220,11 +238,15 @@ below had been avoided. Full text in
       the user-visible symptom in the issue? If I can only say "this
       variable is wrong", keep tracing.
 
-### Phase 12 — Commit locally
+### Phase 12 — Commit locally (and optionally push)
+
+The commit goes into the **wolfssl-issues sub-repo**, not the wolfSSL
+tree:
 
 ```sh
+cd <wolfssl-tree>/wolfssl-issues
 git add issue-N/
-git commit -m "issue-N: reproducer, patch, and BEFORE/AFTER test harness
+git commit -m "Add issue-N review artefacts
 
 <short description>
 
@@ -235,6 +257,10 @@ git commit -m "issue-N: reproducer, patch, and BEFORE/AFTER test harness
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
+
+Do **not** push automatically. After committing, show the commit
+(`git log -1`) to the user and ask whether to `git push`. Push is a
+shared-state action; treat it like posting the GitHub reply.
 
 ### Phase 13 — Draft the GitHub reply
 

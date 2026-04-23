@@ -3,6 +3,17 @@
 Per-phase command recipes. Read this file when executing a phase and
 something is unclear.
 
+## Phase 0 — Verify the sub-repo
+
+Before anything else, confirm that `<wolfssl-tree>/wolfssl-issues/`
+exists and is a git working tree. Artefacts go there, not into the
+wolfSSL source tree itself.
+
+```sh
+test -d /home/ubuntu/wolfssl/wolfssl-issues/.git \
+    || { echo "wolfssl-issues sub-repo not found — clone it first"; exit 1; }
+```
+
 ## Phase 1 — Prepare the tree
 
 Default wolfSSL tree location: `/home/ubuntu/wolfssl`.
@@ -143,11 +154,12 @@ assembly step expects them.
 # (Edit the files)
 
 # Capture the diff:
-git diff <files> > issue-N/issue-N.patch
+mkdir -p wolfssl-issues/issue-N
+git diff <files> > wolfssl-issues/issue-N/issue-N.patch
 
 # Verify the patch applies cleanly starting from the clean tree:
 git checkout -- <files>
-git apply --check issue-N/issue-N.patch
+git apply --check wolfssl-issues/issue-N/issue-N.patch
 echo "apply-check exit = $?"
 ```
 
@@ -197,8 +209,10 @@ Run with `LD_LIBRARY_PATH=$REPO/src/.libs`.
 ## Phase 8 — `test.sh`
 
 Copy [test-sh-template.sh](test-sh-template.sh) to
-`issue-N/test.sh` and `chmod +x`. Fill the placeholders at the top of
-the file.
+`wolfssl-issues/issue-N/test.sh` and `chmod +x`. Fill the
+placeholders at the top of the file. The template's `REPO` resolution
+assumes the script is at `wolfssl-issues/issue-N/test.sh` and walks
+up two levels to reach the wolfSSL repo root.
 
 ### Placeholders
 
@@ -226,13 +240,13 @@ the file.
 ## Phase 9 — `.gitignore`
 
 ```sh
-echo "issue-N-test" > issue-N/.gitignore
+echo "issue-N-test" > wolfssl-issues/issue-N/.gitignore
 ```
 
 ## Phase 10 — Run `test.sh`
 
 ```sh
-./issue-N/test.sh
+./wolfssl-issues/issue-N/test.sh
 ```
 
 Expected final line: `Overall: all four outcomes as expected.`
@@ -251,11 +265,12 @@ through the three questions. It is acceptable to answer
 "considered and rejected for X" but not acceptable to skip the
 question.
 
-## Phase 12 — Commit
+## Phase 12 — Commit (in the wolfssl-issues sub-repo)
 
 ```sh
+cd <wolfssl-tree>/wolfssl-issues
 git add issue-N/
-git commit -m "issue-N: reproducer, patch, and BEFORE/AFTER test harness
+git commit -m "Add issue-N review artefacts
 
 <one-paragraph summary of the bug>
 
@@ -267,13 +282,16 @@ git commit -m "issue-N: reproducer, patch, and BEFORE/AFTER test harness
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
 
-Commit only the `issue-N/` directory. Do not sweep up unrelated
-staged files:
+If the wolfssl-issues sub-repo has pre-existing staged work, use
+pathspec so the commit is scoped to just `issue-N/`:
 
 ```sh
-# If there were pre-existing staged files, use pathspec:
 git commit -- issue-N/
 ```
+
+After committing, show `git log -1` and `git diff HEAD~1..HEAD --stat`
+to the user, and **ask before pushing**. `git push` is a shared-state
+action — same category as posting a GitHub comment.
 
 ## Phase 13 — Draft the reply
 

@@ -16,7 +16,7 @@ The GitHub issue reply has a fixed shape:
 
 ```sh
 N=<ISSUE_NUMBER>
-ISSUE_DIR="$REPO/issue-$N"
+ISSUE_DIR="$REPO/wolfssl-issues/issue-$N"
 
 {
   cat <<'HEAD'
