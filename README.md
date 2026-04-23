@@ -29,9 +29,22 @@ the motivation for turning the procedure into a skill.
 ## Install
 
 ```sh
-git clone https://github.com/cpsource/wolfssl-issue-review \
-    ~/.claude/skills/wolfssl-issue-review
+git clone https://github.com/cpsource/wolfssl-issue-review
+cd wolfssl-issue-review
+./skill-install.sh
 ```
+
+The script copies `SKILL.md`, `README.md`, `LICENSE`, `references/`,
+and `assets/` into `~/.claude/skills/wolfssl-issue-review/`. It does
+*not* copy `.git/`, so the install location stays clean. Re-running
+the script reinstalls over the top of the existing install.
+
+Uninstall: `./skill-install.sh --uninstall`.
+
+(If you'd rather keep the source-of-truth inside
+`~/.claude/skills/` and pull updates with `git pull`, you can clone
+directly: `git clone https://github.com/cpsource/wolfssl-issue-review
+~/.claude/skills/wolfssl-issue-review`. Both layouts work.)
 
 ## Prerequisites
 
